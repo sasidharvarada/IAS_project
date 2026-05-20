@@ -1,0 +1,27 @@
+# ============================================================
+# Load and Scaling Configuration for Email Classifier Agent Instance-001
+# ============================================================
+
+app_id: email-classifier-agent
+instance_id: instance-001
+
+load_settings:
+  # Overall instance scaling for orchestrator/agent components
+  min_instances: 1
+  max_instances: 4
+  
+  # Auto-scaling policy based on CPU utilization
+  scaling_policy:
+    metric: "cpu_utilization"
+    threshold_percent: 60 # Scale up when CPU exceeds 60%
+    cooldown_seconds: 300 # Wait 5 minutes between scaling actions
+
+  # Individual artifact scaling (if needed, overrides global instance scaling for specific artifacts)
+  artifact_scaling:
+    classifier-agent:
+      min_replicas: 1
+      max_replicas: 2
+      scaling_policy:
+        metric: "request_latency_ms"
+        threshold_ms: 500
+        cooldown_seconds: 180

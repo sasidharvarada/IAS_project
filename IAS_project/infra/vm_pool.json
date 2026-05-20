@@ -1,0 +1,22 @@
+{
+  "vms": [
+    {
+      "name": "vm-agent-1",
+      "ip": "127.0.0.1",
+      "roles": ["agent", "tool"],
+      "status": "healthy",
+      "cpu_pct": 10.0,
+      "ram_pct": 30.0,
+      "latency_ms": 1.0
+    },
+    {
+      "name": "vm-tool-1",
+      "ip": "127.0.0.2",
+      "roles": ["tool"],
+      "status": "healthy",
+      "cpu_pct": 20.0,
+      "ram_pct": 40.0,
+      "latency_ms": 2.0
+    }
+  ]
+}

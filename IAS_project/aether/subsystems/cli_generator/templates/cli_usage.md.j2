@@ -1,0 +1,43 @@
+# {{ document.app_name }} CLI Usage
+
+Generated from `{{ document.generated_from }}`.
+
+## App Summary
+
+- Name: {{ document.app_name }}
+- Version: {{ document.app_version }}
+- Author: {{ document.app_author or 'unknown' }}
+- Runtime: {{ document.runtime }}
+- Entry point: `{{ document.cli_entry_point }}`
+- Distribution mode: {{ document.distribution_mode }}
+- Topology: {{ document.topology }}
+- Transport: {{ document.transport }}
+
+{% if document.app_description %}
+## Description
+
+{{ document.app_description }}
+
+{% endif %}
+## Usage Overview
+
+This app is launched through `{{ document.cli_entry_point }}` and supports the following common patterns:
+
+{% for example in document.examples %}
+- `{{ example }}`
+{% endfor %}
+
+## Artifacts
+
+| Type | Artifact ID | Class | Entry Point |
+|------|-------------|-------|-------------|
+{% for artifact in document.artifacts %}
+| {{ artifact.artifact_type }} | {{ artifact.artifact_id }} | `{{ artifact.class_path }}` | `{{ artifact.entry_point or '-' }}` |
+{% endfor %}
+
+## Notes
+
+- `--health` checks whether the artifact is ready.
+- `--json` returns machine-readable output when supported.
+- `--api-key` overrides the environment-based API key for local runs.
+- `--stdin` reads input from standard input for shell pipelines.

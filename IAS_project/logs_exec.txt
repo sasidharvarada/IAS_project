@@ -1,0 +1,19 @@
+
+```bash
+# See all subsystem logs
+ls -1 .run/logs
+
+# Follow one subsystem live
+tail -f .run/logs/gateway.log
+
+# Follow a different subsystem
+tail -f .run/logs/user_management.log
+```
+
+If you want a combined diagnostic dump, run collect_platform_logs.sh. It prints the last 200 lines from every log file under logs and saves the output under ./.run/diagnostics.
+
+```bash
+bash scripts/collect_platform_logs.sh
+```
+
+If you want, I can also give you the exact log file name for each subsystem in this repo.

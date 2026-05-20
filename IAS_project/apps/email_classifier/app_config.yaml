@@ -1,0 +1,50 @@
+# ============================================================
+# Agentic AI App - Email Classifier Agent
+# Platform: Distributed Agentic AI Application Platform
+# ============================================================
+
+app:
+  name: email-classifier-agent
+  version: "1.0.0"
+  description: "Classifies, simplifies and prioritizes emails using AI"
+  author: "Platform"
+  runtime: python3.11
+
+# -------------------------------------------------------------------
+# Artifact Definitions (Models / Tools / Orchestrators / Agents)
+# -------------------------------------------------------------------
+artifacts:
+
+  models:
+    - id: email-llm-model
+      class: models.email_model.EmailLLMModel
+      # ... other model specific configurations
+  
+  tools:
+    - id: text-simplifier-tool
+      class: tools.text_simplifier.TextSimplifierTool
+      # ... other tool specific configurations
+  
+  agents:
+    - id: classifier-agent
+      class: agents.classifier_agent.ClassifierAgent
+      # ... other agent specific configurations
+  
+  orchestrators:
+    - id: email-orchestrator
+      class: orchestrators.email_orchestrator.EmailOrchestrator
+      # ... other orchestrator specific configurations
+
+# -------------------------------------------------------------------
+# Application-level Global Variables (defined by developer)
+# -------------------------------------------------------------------
+global_app_variables:
+  API_KEY: "dev_api_key_123"
+  LOG_LEVEL: "INFO"
+
+# -------------------------------------------------------------------
+# Instance-level Variable Placeholders (defined by developer, filled at instance configuration)
+# -------------------------------------------------------------------
+instance_variable_placeholders:
+  INSTANCE_ID: ""
+  DATABASE_URL: ""

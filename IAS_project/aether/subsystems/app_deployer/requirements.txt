@@ -1,0 +1,12 @@
+# platform/subsystems/app_deployer/requirements.txt
+# Dependencies for the App Deployer subsystem
+
+# Core dependencies
+paramiko==3.4.0          # SSH/SFTP client
+Jinja2==3.1.2            # Template rendering
+PyYAML==6.0              # YAML parsing
+requests==2.31.0         # HTTP requests for health checks
+
+# Optional but recommended
+python-dotenv==1.0.0     # Environment variable loading
+kafka-python==2.0.2      # Internal subsystem event bus

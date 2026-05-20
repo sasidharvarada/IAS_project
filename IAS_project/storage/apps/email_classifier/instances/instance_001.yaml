@@ -1,0 +1,40 @@
+# ============================================================
+# Application Instance Configuration - Email Classifier Agent
+# Instance ID: instance-001
+# ============================================================
+
+app_id: email-classifier-agent
+app_version: "1.0.0"
+instance_id: instance-001
+deployment_target_vm: vm-001 # The VM where this instance's primary components are deployed
+
+# -------------------------------------------------------------------
+# Instance-level Data (specific to this instance)
+# -------------------------------------------------------------------
+instance_data:
+  DATABASE_URL: "postgresql://user:password@db-instance-001:5432/email_db"
+  INSTANCE_SPECIFIC_SETTING: "value_for_instance_001"
+
+# -------------------------------------------------------------------
+# Global Application Variables (overrides platform defaults if specified)
+# -------------------------------------------------------------------
+global_app_variables:
+  API_KEY: "prod_api_key_456" # Override the developer's API key
+  LOG_LEVEL: "DEBUG"
+
+# -------------------------------------------------------------------
+# Artifact Deployment Distribution (how artifacts are spread across VMs for this instance)
+# -------------------------------------------------------------------
+artifact_distribution:
+  email-llm-model:
+    vm_id: vm-001
+    port: 8001
+  text-simplifier-tool:
+    vm_id: vm-002
+    port: 8002
+  classifier-agent:
+    vm_id: vm-001
+    port: 8003
+  email-orchestrator:
+    vm_id: vm-001
+    port: 8004

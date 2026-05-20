@@ -1,0 +1,93 @@
+app:
+  name: study-planner-agent
+  version: "1.0.0"
+  description: "Turns a learning goal into a focused study plan"
+  author: "Platform"
+  runtime: python3.11
+
+artifacts:
+  models:
+    - id: study-plan-model
+      class: models.study_model.StudyPlanModel
+      type: llm
+      provider: local
+      model_id: heuristic-planner
+      config:
+        max_tokens: 512
+        temperature: 0.2
+
+  tools:
+    - id: goal-analyzer
+      class: tools.goal_analyzer.GoalAnalyzerTool
+      type: microservice
+      entry_point: tools/goal_analyzer.py
+      interface: sync
+      input_schema:
+        raw_goal: string
+      output_schema:
+        topics: list
+        difficulty: string
+
+    - id: session-planner
+      class: tools.session_planner.SessionPlannerTool
+      type: microservice
+      entry_point: tools/session_planner.py
+      interface: sync
+      input_schema:
+        topics: list
+        difficulty: string
+      output_schema:
+        plan: list
+        estimated_days: int
+
+  orchestrators:
+    - id: study-pipeline-orchestrator
+      class: orchestrators.study_pipeline.StudyPipelineOrchestrator
+      entry_point: orchestrators/study_pipeline.py
+      strategy: sequential
+      steps:
+        - tool: goal-analyzer
+        - tool: session-planner
+
+  agents:
+    - id: study-planner-agent
+      class: agents.study_planner_agent.StudyPlannerAgent
+      entry_point: agents/study_planner_agent.py
+      model: study-plan-model
+      orchestrator: study-pipeline-orchestrator
+      tools:
+        - goal-analyzer
+        - session-planner
+
+entry_points:
+  cli: main.py
+  agent: agents/study_planner_agent.py
+  orchestrator: orchestrators/study_pipeline.py
+
+distribution:
+  mode: distributed
+  topology: microservices
+  transport: http
+  serialization: json
+  nodes:
+    - node_id: agent-node-1
+      role: agent
+      host: localhost
+      port: 8011
+      artifacts:
+        - study-planner-agent
+
+    - node_id: tool-node-1
+      role: tools
+      host: localhost
+      port: 8012
+      artifacts:
+        - goal-analyzer
+        - session-planner
+
+    - node_id: orchestrator-node-1
+      role: orchestrator
+      host: localhost
+      port: 8013
+      artifacts:
+        - study-pipeline-orchestrator

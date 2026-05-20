@@ -1,0 +1,42 @@
+# ============================================================
+# Agentic AI App Manifest - Email Classifier Agent
+# Platform: Distributed Agentic AI Application Platform
+# ============================================================
+
+app_id: email-classifier-agent
+app_version: "1.0.0"
+runtime: python3.11
+entry_point: main.py # The main entry point for the application
+
+# List of all artifacts with their types and entry points
+artifacts:
+  models:
+    - id: email-llm-model
+      path: models/email_model.py
+      class_name: EmailLLMModel
+  tools:
+    - id: text-simplifier-tool
+      path: tools/text_simplifier.py
+      class_name: TextSimplifierTool
+  agents:
+    - id: classifier-agent
+      path: agents/classifier_agent.py
+      class_name: ClassifierAgent
+  orchestrators:
+    - id: email-orchestrator
+      path: orchestrators/email_orchestrator.py
+      class_name: EmailOrchestrator
+
+# List of all dependencies for the application
+dependencies:
+  - requirements.txt
+
+# Global variables required by the application, to be provided by the platform
+global_variable_keys:
+  - API_KEY
+  - LOG_LEVEL
+
+# Instance-level variables, to be filled during instance configuration
+instance_variable_keys:
+  - INSTANCE_ID
+  - DATABASE_URL

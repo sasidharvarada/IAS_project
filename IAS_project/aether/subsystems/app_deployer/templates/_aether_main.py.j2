@@ -1,0 +1,349 @@
+{#
+  templates/_aether_main.py.j2
+  
+  Generated FastAPI runtime wrapper for a deployed Aether app.
+  
+  This template is rendered by runtime_generator.py with:
+    - app_id, app_version
+    - artifacts (list of artifact dicts with class paths, types, ids)
+    - models_artifacts, tools_artifacts, orchestrators_artifacts, agents_artifacts
+  
+  Generated main.py will:
+    1. Accept --role (agent|tool|orchestrator|model) and --artifact <id> via argparse
+    2. Boot the appropriate FastAPI server for that role
+    3. Dynamically import user artifact classes from config.yaml
+    4. Serve /run and /health endpoints
+    5. Support local CLI mode too (if --email is passed)
+#}
+#!/usr/bin/env python3
+"""
+_aether_main.py (AUTO-GENERATED)
+
+Platform-generated runtime wrapper for {{ app_id }} v{{ app_version }}.
+Do NOT edit — regenerated on each deployment from config.yaml.
+
+This wrapper:
+  1. Accepts --role (agent | tool | orchestrator | model)
+  2. Dynamically imports artifact classes from your app
+  3. Boots FastAPI servers per artifact
+  4. Supports local CLI mode (--email <file> etc)
+"""
+
+import argparse
+import sys
+import os
+import json
+import logging
+from typing import Optional, Dict, Any
+
+# FastAPI and uvicorn
+from fastapi import FastAPI
+import uvicorn
+
+# Import platform base classes
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../.."))
+from platform.core.base_agent import BaseAgent, AgentResponse, RunStatus
+from platform.core.base_tool import BaseTool
+from platform.core.base_orchestrator import BaseOrchestrator
+from platform.core.base_model import BaseModel
+
+# Import this app's artifacts
+sys.path.insert(0, os.path.dirname(__file__))
+{% for artifact in all_artifacts %}
+from {{ artifact.module }} import {{ artifact.classname }}
+{% endfor %}
+
+logger = logging.getLogger("aether.main")
+logging.basicConfig(level=logging.INFO)
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Artifact Registry (dynamic lookup by role + artifact_id)
+# ══════════════════════════════════════════════════════════════════
+
+AGENTS = {
+{% for agent in agents_artifacts %}
+    "{{ agent.id }}": {{ agent.classname }},
+{% endfor %}
+}
+
+TOOLS = {
+{% for tool in tools_artifacts %}
+    "{{ tool.id }}": {{ tool.classname }},
+{% endfor %}
+}
+
+ORCHESTRATORS = {
+{% for orch in orchestrators_artifacts %}
+    "{{ orch.id }}": {{ orch.classname }},
+{% endfor %}
+}
+
+MODELS = {
+{% for model in models_artifacts %}
+    "{{ model.id }}": {{ model.classname }},
+{% endfor %}
+}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Boot Functions
+# ══════════════════════════════════════════════════════════════════
+
+def boot_agent(artifact_id: str, port: int, app: FastAPI, env_vars: Dict[str, str]):
+    """
+    Boot an Agent as a FastAPI server.
+    
+    Agent.run(**inputs) returns AgentResponse envelope:
+      {
+        "output": <result>,
+        "status": "success" | "failed" | ...,
+        "session_id": "<uuid>",
+        "tool_calls": [...],
+        "latency_ms": 123.45,
+        ...
+      }
+    """
+    agent_class = AGENTS.get(artifact_id)
+    if not agent_class:
+        raise ValueError(f"Agent '{artifact_id}' not found in registry")
+    
+    logger.info(f"Initializing agent: {artifact_id}")
+    agent = agent_class(**env_vars)
+    
+    @app.post("/run")
+    def run(body: dict):
+        """Execute the agent with given inputs."""
+        try:
+            response = agent.run(**body)
+            if isinstance(response, AgentResponse):
+                return response.to_dict()
+            # If user returns plain dict, wrap it
+            return {
+                "output": response,
+                "status": "success",
+                "session_id": "",
+                "tool_calls": [],
+                "latency_ms": 0.0,
+                "error": "",
+                "metadata": {},
+            }
+        except Exception as e:
+            logger.error(f"Agent.run() failed: {e}")
+            return {
+                "output": None,
+                "status": "failed",
+                "session_id": "",
+                "tool_calls": [],
+                "latency_ms": 0.0,
+                "error": str(e),
+                "metadata": {},
+            }
+    
+    @app.get("/health")
+    def health():
+        """Health check endpoint."""
+        try:
+            status = agent.health()
+            return {"status": "ok", "agent": status}
+        except Exception as e:
+            return {"status": "degraded", "error": str(e)}
+    
+    logger.info(f"Agent '{artifact_id}' ready on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+
+def boot_tool(artifact_id: str, port: int, app: FastAPI, env_vars: Dict[str, str]):
+    """
+    Boot a Tool as a FastAPI server.
+    
+    Tool.run(**inputs) returns dict.
+    """
+    tool_class = TOOLS.get(artifact_id)
+    if not tool_class:
+        raise ValueError(f"Tool '{artifact_id}' not found in registry")
+    
+    logger.info(f"Initializing tool: {artifact_id}")
+    tool = tool_class(**env_vars)
+    
+    @app.post("/run")
+    def run(body: dict):
+        """Execute the tool with given inputs."""
+        try:
+            result = tool.run(**body)
+            return {"output": result, "status": "ok"}
+        except Exception as e:
+            logger.error(f"Tool.run() failed: {e}")
+            return {"output": None, "status": "failed", "error": str(e)}
+    
+    @app.get("/health")
+    def health():
+        """Health check endpoint."""
+        try:
+            status = tool.health()
+            return {"status": "ok", "tool": status}
+        except Exception as e:
+            return {"status": "degraded", "error": str(e)}
+    
+    logger.info(f"Tool '{artifact_id}' ready on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+
+def boot_orchestrator(artifact_id: str, port: int, app: FastAPI, env_vars: Dict[str, str]):
+    """
+    Boot an Orchestrator as a FastAPI server.
+    
+    Orchestrator.run(**inputs) returns dict with pipeline results.
+    """
+    orch_class = ORCHESTRATORS.get(artifact_id)
+    if not orch_class:
+        raise ValueError(f"Orchestrator '{artifact_id}' not found in registry")
+    
+    logger.info(f"Initializing orchestrator: {artifact_id}")
+    orch = orch_class(**env_vars)
+    
+    @app.post("/run")
+    def run(body: dict):
+        """Execute the orchestration pipeline."""
+        try:
+            result = orch.run(**body)
+            return {"output": result, "status": "ok"}
+        except Exception as e:
+            logger.error(f"Orchestrator.run() failed: {e}")
+            return {"output": None, "status": "failed", "error": str(e)}
+    
+    @app.get("/health")
+    def health():
+        """Health check endpoint."""
+        try:
+            status = orch.health()
+            return {"status": "ok", "orchestrator": status}
+        except Exception as e:
+            return {"status": "degraded", "error": str(e)}
+    
+    logger.info(f"Orchestrator '{artifact_id}' ready on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+
+def boot_model(artifact_id: str, port: int, app: FastAPI, env_vars: Dict[str, str]):
+    """
+    Boot a Model as a FastAPI server.
+    
+    Model.complete(prompt, ...) returns str (completion).
+    """
+    model_class = MODELS.get(artifact_id)
+    if not model_class:
+        raise ValueError(f"Model '{artifact_id}' not found in registry")
+    
+    logger.info(f"Initializing model: {artifact_id}")
+    model = model_class(**env_vars)
+    
+    @app.post("/run")
+    def run(body: dict):
+        """Execute model inference."""
+        try:
+            prompt = body.get("prompt", "")
+            system = body.get("system", "")
+            result = model.complete(prompt, system=system)
+            return {"output": result, "status": "ok"}
+        except Exception as e:
+            logger.error(f"Model.complete() failed: {e}")
+            return {"output": None, "status": "failed", "error": str(e)}
+    
+    @app.get("/health")
+    def health():
+        """Health check endpoint."""
+        try:
+            status = model.health()
+            return {"status": "ok", "model": status}
+        except Exception as e:
+            return {"status": "degraded", "error": str(e)}
+    
+    logger.info(f"Model '{artifact_id}' ready on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  CLI Argument Parser
+# ══════════════════════════════════════════════════════════════════
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="aether-runtime",
+        description="Platform-generated runtime for {{ app_id }} v{{ app_version }}",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--role",
+        required=True,
+        choices=["agent", "tool", "orchestrator", "model"],
+        help="Which artifact type to boot",
+    )
+    parser.add_argument(
+        "--artifact",
+        required=False,
+        help="Artifact ID (required for tool/orchestrator/model, optional for agent)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to listen on (default: 8000)",
+    )
+    return parser
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Main Entry Point
+# ══════════════════════════════════════════════════════════════════
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+    
+    # Collect environment variables (may be used by artifact constructors)
+    env_vars = dict(os.environ)
+    
+    # Create FastAPI app
+    app = FastAPI(
+        title=f"{{ app_id }} - {args.role}",
+        version="{{ app_version }}",
+    )
+    
+    @app.get("/")
+    def root():
+        return {
+            "app": "{{ app_id }}",
+            "version": "{{ app_version }}",
+            "role": args.role,
+            "artifact": args.artifact or "(multiple)",
+        }
+    
+    # Boot the appropriate server
+    role = args.role
+    
+    if role == "agent":
+        artifact_id = args.artifact or "{{ default_agent_id }}"
+        boot_agent(artifact_id, args.port, app, env_vars)
+    
+    elif role == "tool":
+        if not args.artifact:
+            print("ERROR: --artifact required for role=tool", file=sys.stderr)
+            sys.exit(1)
+        boot_tool(args.artifact, args.port, app, env_vars)
+    
+    elif role == "orchestrator":
+        artifact_id = args.artifact or "{{ default_orchestrator_id }}"
+        boot_orchestrator(artifact_id, args.port, app, env_vars)
+    
+    elif role == "model":
+        artifact_id = args.artifact or "{{ default_model_id }}"
+        boot_model(artifact_id, args.port, app, env_vars)
+    
+    else:
+        print(f"Unknown role: {role}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

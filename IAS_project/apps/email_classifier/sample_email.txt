@@ -1,0 +1,21 @@
+From: sarah.chen@acmecorp.com
+To: dev-team@acmecorp.com
+Subject: URGENT: Production database is down — customers can't log in
+
+Hi team,
+
+I just got off a call with our biggest enterprise client, GlobalTech. Their entire team (400+ users) has been unable to log into the platform for the past 2 hours. We're seeing 503 errors across the board.
+
+I checked with infra and it looks like the primary database replica went down around 9:45 AM. The failover didn't trigger automatically.
+
+Can someone please look at this immediately? GlobalTech's CTO is on the phone with our CEO right now and we need an ETA within the next 20 minutes.
+
+If you need access to the production dashboard, ping me directly.
+
+Thanks,
+Sarah
+
+—
+Sarah Chen | VP of Customer Success
+Acme Corp | sarah.chen@acmecorp.com | +1-415-555-0198
+This email and any attachments are confidential and intended solely for the use of the individual or entity to whom they are addressed.

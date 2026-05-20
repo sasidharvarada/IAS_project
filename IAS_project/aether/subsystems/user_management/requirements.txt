@@ -1,0 +1,10 @@
+# User Management subsystem dependencies
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9        # PostgreSQL driver
+bcrypt>=4.0.0                 # bcrypt password hashing (used directly, passlib not needed)
+python-jose[cryptography]>=3.3.0  # JWT
+kafka-python>=2.0.2           # optional — Kafka user.events publishing
+python-dotenv>=1.0.0          # load .env in development
+pydantic>=2.0.0

@@ -1,0 +1,39 @@
+{
+  "server": {
+    "ip": "10.1.36.140",
+    "user": "scrc",
+    "password": "iiith@123"
+  },
+  "vms": [
+    {
+      "name": "vm1",
+      "ip": "192.168.122.96",
+      "user": "ubuntu",
+      "password": "ubuntu"
+    },
+    {
+      "name": "vm2",
+      "ip": "192.168.122.64",
+      "user": "ubuntu",
+      "password": "ubuntu"
+    },
+    {
+      "name": "vm3",
+      "ip": "192.168.122.181",
+      "user": "ubuntu",
+      "password": "ubuntu"
+    },
+    {
+      "name": "vm4",
+      "ip": "192.168.122.98",
+      "user": "ubuntu",
+      "password": "ubuntu"
+    },
+    {
+      "name": "vm5",
+      "ip": "192.168.122.41",
+      "user": "ubuntu",
+      "password": "ubuntu"
+    }
+  ]
+}

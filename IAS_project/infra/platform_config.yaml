@@ -1,0 +1,54 @@
+# ============================================================
+# Platform Global Configuration
+# ============================================================
+
+platform:
+  name: AetherAgents-Platform
+  version: "1.0.0"
+
+# -------------------------------------------------------------------
+# VM Pool Configuration
+# -------------------------------------------------------------------
+vm_pool:
+  master_node:
+    ip: "192.168.1.10"
+    username: "aether_master"
+    key_file: "~/.ssh/aether_master.pem"
+  
+  worker_vms:
+    - id: vm-001
+      ip: "192.168.1.11"
+      username: "ubuntu"
+      key_file: "~/.ssh/aether_worker.pem"
+      capacity:
+        cpu_cores: 4
+        memory_gb: 8
+    - id: vm-002
+      ip: "192.168.1.12"
+      username: "ubuntu"
+      key_file: "~/.ssh/aether_worker.pem"
+      capacity:
+        cpu_cores: 4
+        memory_gb: 8
+
+# -------------------------------------------------------------------
+# System Services Configuration
+# -------------------------------------------------------------------
+system_services:
+  nginx:
+    enabled: true
+    nodes: 2 # Number of Nginx instances to run (for load balancing)
+    config_path: "/etc/nginx/nginx.conf"
+  
+  kafka:
+    enabled: true
+    broker_nodes: 3 # Number of Kafka brokers
+    zookeeper_nodes: 3 # Number of Zookeeper nodes
+  
+  lifecycle_manager:
+    enabled: true
+    nodes: 1 # Number of lifecycle manager instances
+  
+  vm_health_checker:
+    enabled: true
+    interval_seconds: 10
